@@ -1,6 +1,6 @@
 [package]
 name = "metadata-transferer"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Odilf <odysseas.maheras@gmail.com>"]
 license = "MIT"
@@ -11,4 +11,4 @@ repository = "https://github.com/Odilf/grrs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "3.2.16", features = ["derive"] }
+clap = { version = "3.2.16", features = ["derive", "cargo"] }

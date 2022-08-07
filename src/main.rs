@@ -1,13 +1,27 @@
 use std::{process::Command, fs::{self, metadata}, path::PathBuf};
 use clap::Parser;
 
-#[derive(Parser, Debug)]
+
+#[derive(Parser)]
+#[clap(name = clap::crate_name!())]
+#[clap(version = clap::crate_version!())]
+#[clap(about = clap::crate_description!())]
 struct Cli {
+	/// Input path (reference, doesn't get affected)
 	#[clap(parse(from_os_str))]
 	input: PathBuf,
-
+	
+	/// Output path (DOES GET AFFECTED)
 	#[clap(parse(from_os_str))]
 	output: PathBuf,
+	
+	/// Tries to match the extension of files
+	#[clap(short, long, default_value="false", takes_value=true)]
+	match_extension: bool,
+
+	/// Prints extra info
+	#[clap(short, long, default_value="true", takes_value=true)]
+	verbose: bool,
 }
 
 fn main() {
@@ -16,20 +30,22 @@ fn main() {
 	let inputs = get_input(&args.input).expect("Invalid input");
 	let outputs = get_input(&args.output).expect("Invalid output");
 
-	// for (input, output) in input.iter().zip(output) {
-	// 	println!("in: {:?}. out: {:?}", input, output);
-	// }
-
 	for input in inputs {
-		let output = outputs.iter().find(|output| output.with_extension("").file_name() == input.with_extension("").file_name());
+		let output = outputs.iter().find(|output| do_match(&input, output, args.match_extension));
 
 		if let Some(output) = output {
-			println!("Input: {:?}, (matching) output: {:?}", input, output);
-
-			set_metadata(&input, output)
-		} else {
-			println!("Didn't find match for {:?}", input);
+			set_metadata(&input, output, args.verbose)
+		} else if args.verbose {
+			eprintln!("Didn't find match for {:?}", input);
 		}
+	}
+}
+
+fn do_match(a: &PathBuf, b: &PathBuf, match_extension: bool) -> bool {
+	if match_extension {
+		a.with_extension("").file_name() == b.with_extension("").file_name()
+	} else {
+		a.file_name() == b.file_name()
 	}
 }
 
@@ -50,7 +66,21 @@ fn get_input(path: &PathBuf) -> Result<Vec<PathBuf>, std::io::Error> {
 	}
 }
 
-fn set_metadata(input: &PathBuf, output: &PathBuf) {
+fn set_metadata(input: &PathBuf, output: &PathBuf, verbose: bool) {
+	let creation_date = Command::new("mdls")
+		.args(["--name", "kMDItemContentCreationDate", input.to_str().unwrap()])
+		.output();
+
+	let creation_date = String::from_utf8(
+		creation_date
+		.expect(format!("File {:?} doesn't have creation date", input).as_str())
+		.stdout
+	).unwrap();
+	
+	if verbose {
+		println!("Setting metadata of {:?} to {}", output, creation_date);
+	}
+
 	let res = Command::new("touch")
 		.args(["-r", input.to_str().unwrap(), output.to_str().unwrap()])
 		.output();
