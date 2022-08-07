@@ -15,13 +15,17 @@ struct Cli {
 	#[clap(parse(from_os_str))]
 	output: PathBuf,
 	
-	/// Tries to match the extension of files
-	#[clap(short, long, default_value="false", takes_value=true)]
+	/// Try to match the extension of files [default: false]
+	#[clap(short, long)]
 	match_extension: bool,
 
-	/// Prints extra info
+	/// Print extra info
 	#[clap(short, long, default_value="true", takes_value=true)]
 	verbose: bool,
+
+	/// Don't actually write the metadata
+	#[clap(short, long)]
+	dry_run: bool,
 }
 
 fn main() {
@@ -34,11 +38,13 @@ fn main() {
 		let output = outputs.iter().find(|output| do_match(&input, output, args.match_extension));
 
 		if let Some(output) = output {
-			set_metadata(&input, output, args.verbose)
+			set_metadata(&input, output, args.verbose, args.dry_run)
 		} else if args.verbose {
 			eprintln!("Didn't find match for {:?}", input);
 		}
 	}
+
+	println!("{:?}", args.match_extension)
 }
 
 fn do_match(a: &PathBuf, b: &PathBuf, match_extension: bool) -> bool {
@@ -66,7 +72,9 @@ fn get_input(path: &PathBuf) -> Result<Vec<PathBuf>, std::io::Error> {
 	}
 }
 
-fn set_metadata(input: &PathBuf, output: &PathBuf, verbose: bool) {
+
+
+fn set_metadata(input: &PathBuf, output: &PathBuf, verbose: bool, dry: bool) {
 	let creation_date = Command::new("mdls")
 		.args(["--name", "kMDItemContentCreationDate", input.to_str().unwrap()])
 		.output();
@@ -79,6 +87,10 @@ fn set_metadata(input: &PathBuf, output: &PathBuf, verbose: bool) {
 	
 	if verbose {
 		println!("Setting metadata of {:?} to {}", output, creation_date);
+	}
+
+	if dry {
+		return
 	}
 
 	let res = Command::new("touch")
