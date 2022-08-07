@@ -2,7 +2,7 @@
 
 A simple CLI tool to transfer metadata between files.
 
-Built in rust.
+Written in rust.
 
 ## Usage
 
