@@ -49,9 +49,9 @@ fn main() {
 
 fn do_match(a: &PathBuf, b: &PathBuf, match_extension: bool) -> bool {
 	if match_extension {
-		a.with_extension("").file_name() == b.with_extension("").file_name()
-	} else {
 		a.file_name() == b.file_name()
+	} else {
+		a.with_extension("").file_name() == b.with_extension("").file_name()
 	}
 }
 
